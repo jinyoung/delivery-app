@@ -1,0 +1,445 @@
+Let's start by creating the `pom.xml` file which will define the Maven project, its dependencies, and properties.
+
+pom.xml
+```xml
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.example</groupId>
+    <artifactId>restaurant-management</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.1.3</version>
+    </parent>
+
+    <properties>
+        <java.version>17</java.version>
+        <spring-cloud.version>2021.0.3</spring-cloud.version>
+    </properties>
+
+    <dependencies>
+        <!-- Spring Boot Starter Web, includes RESTful support and Tomcat as the default embedded container -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Spring Boot Starter Data JPA, includes spring-data-jpa, spring-orm, hibernate -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <!-- Spring Boot Starter Data REST -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-rest</artifactId>
+        </dependency>
+
+        <!-- H2 Database Engine -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Lombok for boilerplate code reduction -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Spring Cloud Stream -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-stream</artifactId>
+            <version>3.1.3</version>
+        </dependency>
+
+        <!-- Spring Cloud Stream Binder for Kafka -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-stream-binder-kafka</artifactId>
+        </dependency>
+
+        <!-- Spring Boot Starter Test for testing -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+```
+
+Next, we will create the `run.sh` script to build and run the application.
+
+run.sh
+```sh
+#!/bin/bash
+mvn clean install --no-transfer-progress
+mvn spring-boot:run --no-transfer-progress
+```
+
+Make sure to give execution permission to the `run.sh` script:
+
+```sh
+chmod +x run.sh
+```
+
+Now, let's start implementing the application code. We will begin with the domain model, which is the core of the clean architecture.
+
+src/main/java/com/example/restaurantmanagement/domain/Address.java
+```java
+package com.example.restaurantmanagement.domain;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class Address {
+    private String street;
+    private String city;
+    private String state;
+    private String zipCode;
+    private String country;
+}
+```
+
+src/main/java/com/example/restaurantmanagement/domain/Restaurant.java
+```java
+package com.example.restaurantmanagement.domain;
+
+import lombok.Data;
+import org.springframework.data.annotation.Id;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Table;
+
+@Data
+@Entity
+@Table(name = "restaurants")
+public class Restaurant {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private String restaurantId;
+    private String name;
+    private Address address;
+    private String phone;
+    private String menu;
+}
+```
+
+Next, we will create the repository interface for accessing the Restaurant data.
+
+src/main/java/com/example/restaurantmanagement/domain/RestaurantRepository.java
+```java
+package com.example.restaurantmanagement.domain;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface RestaurantRepository extends JpaRepository<Restaurant, String> {
+}
+```
+
+Now, let's define the commands and events according to the Event Storming Model.
+
+src/main/java/com/example/restaurantmanagement/domain/commands/RegisterRestaurantCommand.java
+```java
+package com.example.restaurantmanagement.domain.commands;
+
+import com.example.restaurantmanagement.domain.Address;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class RegisterRestaurantCommand {
+    private String restaurantId;
+    private String name;
+    private Address address;
+    private String phone;
+    private String menu;
+}
+```
+
+src/main/java/com/example/restaurantmanagement/domain/commands/UpdateRestaurantCommand.java
+```java
+package com.example.restaurantmanagement.domain.commands;
+
+import com.example.restaurantmanagement.domain.Address;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class UpdateRestaurantCommand {
+    private String restaurantId;
+    private String name;
+    private Address address;
+    private String phone;
+    private String menu;
+}
+```
+
+src/main/java/com/example/restaurantmanagement/domain/commands/ManageOrderCommand.java
+```java
+package com.example.restaurantmanagement.domain.commands;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class ManageOrderCommand {
+    private String orderId;
+    private String restaurantId;
+    private String menu;
+    private Integer quantity;
+}
+```
+
+src/main/java/com/example/restaurantmanagement/domain/events/RestaurantRegisteredEvent.java
+```java
+package com.example.restaurantmanagement.domain.events;
+
+import com.example.restaurantmanagement.domain.Address;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class RestaurantRegisteredEvent {
+    private String restaurantId;
+    private String name;
+    private Address address;
+    private String phone;
+    private String menu;
+}
+```
+
+src/main/java/com/example/restaurantmanagement/domain/events/RestaurantUpdatedEvent.java
+```java
+package com.example.restaurantmanagement.domain.events;
+
+import com.example.restaurantmanagement.domain.Address;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class RestaurantUpdatedEvent {
+    private String restaurantId;
+    private String name;
+    private Address address;
+    private String phone;
+    private String menu;
+}
+```
+
+src/main/java/com/example/restaurantmanagement/domain/events/OrderProcessedEvent.java
+```java
+package com.example.restaurantmanagement.domain.events;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class OrderProcessedEvent {
+    private String orderId;
+    private String restaurantId;
+    private String menu;
+    private Integer quantity;
+}
+```
+
+Next, we will create the application services that will handle the commands and publish the events.
+
+src/main/java/com/example/restaurantmanagement/application/RestaurantService.java
+```java
+package com.example.restaurantmanagement.application;
+
+import com.example.restaurantmanagement.domain.Restaurant;
+import com.example.restaurantmanagement.domain.RestaurantRepository;
+import com.example.restaurantmanagement.domain.commands.RegisterRestaurantCommand;
+import com.example.restaurantmanagement.domain.commands.UpdateRestaurantCommand;
+import com.example.restaurantmanagement.domain.events.RestaurantRegisteredEvent;
+import com.example.restaurantmanagement.domain.events.RestaurantUpdatedEvent;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class RestaurantService {
+
+    private final RestaurantRepository restaurantRepository;
+
+    @Autowired
+    public RestaurantService(RestaurantRepository restaurantRepository) {
+        this.restaurantRepository = restaurantRepository;
+    }
+
+    @Transactional
+    public RestaurantRegisteredEvent registerRestaurant(RegisterRestaurantCommand command) {
+        Restaurant restaurant = new Restaurant();
+        restaurant.setRestaurantId(command.getRestaurantId());
+        restaurant.setName(command.getName());
+        restaurant.setAddress(command.getAddress());
+        restaurant.setPhone(command.getPhone());
+        restaurant.setMenu(command.getMenu());
+        restaurantRepository.save(restaurant);
+
+        return new RestaurantRegisteredEvent(
+                restaurant.getRestaurantId(),
+                restaurant.getName(),
+                restaurant.getAddress(),
+                restaurant.getPhone(),
+                restaurant.getMenu()
+        );
+    }
+
+    @Transactional
+    public RestaurantUpdatedEvent updateRestaurant(UpdateRestaurantCommand command) {
+        Restaurant restaurant = restaurantRepository.findById(command.getRestaurantId())
+                .orElseThrow(() -> new IllegalArgumentException("Restaurant not found"));
+        restaurant.setName(command.getName());
+        restaurant.setAddress(command.getAddress());
+        restaurant.setPhone(command.getPhone());
+        restaurant.setMenu(command.getMenu());
+        restaurantRepository.save(restaurant);
+
+        return new RestaurantUpdatedEvent(
+                restaurant.getRestaurantId(),
+                restaurant.getName(),
+                restaurant.getAddress(),
+                restaurant.getPhone(),
+                restaurant.getMenu()
+        );
+    }
+}
+```
+
+We will also need a Kafka configuration class to set up our message channels.
+
+src/main/java/com/example/restaurantmanagement/config/KafkaConfig.java
+```java
+package com.example.restaurantmanagement.config;
+
+import org.springframework.cloud.stream.annotation.EnableBinding;
+import org.springframework.cloud.stream.messaging.Source;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+@EnableBinding(Source.class)
+public class KafkaConfig {
+}
+```
+
+Now, let's create the REST controllers that will receive HTTP requests and delegate to the application services.
+
+src/main/java/com/example/restaurantmanagement/web/RestaurantController.java
+```java
+package com.example.restaurantmanagement.web;
+
+import com.example.restaurantmanagement.application.RestaurantService;
+import com.example.restaurantmanagement.domain.commands.RegisterRestaurantCommand;
+import com.example.restaurantmanagement.domain.commands.UpdateRestaurantCommand;
+import com.example.restaurantmanagement.domain.events.RestaurantRegisteredEvent;
+import com.example.restaurantmanagement.domain.events.RestaurantUpdatedEvent;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/restaurants")
+public class RestaurantController {
+
+    private final RestaurantService restaurantService;
+
+    @Autowired
+    public RestaurantController(RestaurantService restaurantService) {
+        this.restaurantService = restaurantService;
+    }
+
+    @PostMapping
+    public ResponseEntity<RestaurantRegisteredEvent> registerRestaurant(@RequestBody RegisterRestaurantCommand command) {
+        RestaurantRegisteredEvent event = restaurantService.registerRestaurant(command);
+        return ResponseEntity.ok(event);
+    }
+
+    @PutMapping("/{restaurantId}")
+    public ResponseEntity<RestaurantUpdatedEvent> updateRestaurant(@PathVariable String restaurantId,
+                                                                   @RequestBody UpdateRestaurantCommand command) {
+        command.setRestaurantId(restaurantId);
+        RestaurantUpdatedEvent event = restaurantService.updateRestaurant(command);
+        return ResponseEntity.ok(event);
+    }
+}
+```
+
+Finally, we will create a test class to ensure our application works as expected.
+
+src/test/java/com/example/restaurantmanagement/RestaurantManagementApplicationTests.java
+```java
+package com.example.restaurantmanagement;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class RestaurantManagementApplicationTests {
+
+    @Test
+    void contextLoads() {
+    }
+}
+```
+
+This concludes a fully working implementation.

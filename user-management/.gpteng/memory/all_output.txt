@@ -1,0 +1,431 @@
+Let's start by creating the `pom.xml` file which will define the Maven project, its dependencies, and properties.
+
+pom.xml
+```xml
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.example</groupId>
+    <artifactId>user-management</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.1.3</version>
+    </parent>
+
+    <properties>
+        <java.version>17</java.version>
+        <spring-cloud.version>2021.0.3</spring-cloud.version>
+    </properties>
+
+    <dependencies>
+        <!-- Spring Boot Starter Web, includes REST Controllers support -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Spring Boot Starter Data JPA, includes spring-data-rest -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <!-- Spring Boot Starter for Kafka with Spring Cloud Streams -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-stream-kafka</artifactId>
+            <version>3.1.3</version>
+        </dependency>
+
+        <!-- H2 Database Engine -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Lombok for boilerplate code reduction -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Spring Boot Starter Test for testing -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+```
+
+Next, we will create the `run.sh` script to build and run the application.
+
+run.sh
+```sh
+#!/bin/bash
+mvn clean install --no-transfer-progress
+mvn spring-boot:run --no-transfer-progress
+```
+
+Make sure to give execution permission to the `run.sh` script:
+```sh
+chmod +x run.sh
+```
+
+Now, let's start creating the Java files for the application. We will begin with the main application class.
+
+src/main/java/com/example/usermanagement/UserManagementApplication.java
+```java
+package com.example.usermanagement;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class UserManagementApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(UserManagementApplication.class, args);
+    }
+}
+```
+
+Next, we will define the domain model, starting with the `Address` class.
+
+src/main/java/com/example/usermanagement/domain/Address.java
+```java
+package com.example.usermanagement.domain;
+
+import jakarta.persistence.Embeddable;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Embeddable
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Address {
+    private String street;
+    private String city;
+    private String state;
+    private String zipCode;
+    private String country;
+}
+```
+
+Now, let's define the `User` aggregate root entity.
+
+src/main/java/com/example/usermanagement/domain/User.java
+```java
+package com.example.usermanagement.domain;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Embedded;
+import lombok.Data;
+
+@Entity
+@Data
+public class User {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String userId;
+    private String name;
+    private String phone;
+    @Embedded
+    private Address address;
+}
+```
+
+We will also need a repository interface for the `User` entity.
+
+src/main/java/com/example/usermanagement/repository/UserRepository.java
+```java
+package com.example.usermanagement.repository;
+
+import com.example.usermanagement.domain.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface UserRepository extends JpaRepository<User, Long> {
+}
+```
+
+Next, we will create the command classes for registering and updating a user.
+
+src/main/java/com/example/usermanagement/service/command/RegisterUserCommand.java
+```java
+package com.example.usermanagement.service.command;
+
+import com.example.usermanagement.domain.Address;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class RegisterUserCommand {
+    private String name;
+    private String phone;
+    private Address address;
+}
+```
+
+src/main/java/com/example/usermanagement/service/command/UpdateUserCommand.java
+```java
+package com.example.usermanagement.service.command;
+
+import com.example.usermanagement.domain.Address;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class UpdateUserCommand {
+    private String userId;
+    private String name;
+    private String phone;
+    private Address address;
+}
+```
+
+Now, we will define the events that our application will produce.
+
+src/main/java/com/example/usermanagement/events/UserRegisteredEvent.java
+```java
+package com.example.usermanagement.events;
+
+import com.example.usermanagement.domain.Address;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserRegisteredEvent {
+    private String userId;
+    private String name;
+    private String phone;
+    private Address address;
+}
+```
+
+src/main/java/com/example/usermanagement/events/UserUpdatedEvent.java
+```java
+package com.example.usermanagement.events;
+
+import com.example.usermanagement.domain.Address;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserUpdatedEvent {
+    private String userId;
+    private String name;
+    private String phone;
+    private Address address;
+}
+```
+
+We will need a service to handle the commands and produce the events.
+
+src/main/java/com/example/usermanagement/service/UserService.java
+```java
+package com.example.usermanagement.service;
+
+import com.example.usermanagement.domain.User;
+import com.example.usermanagement.events.UserRegisteredEvent;
+import com.example.usermanagement.events.UserUpdatedEvent;
+import com.example.usermanagement.repository.UserRepository;
+import com.example.usermanagement.service.command.RegisterUserCommand;
+import com.example.usermanagement.service.command.UpdateUserCommand;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.stereotype.Service;
+
+@Service
+public class UserService {
+    private final UserRepository userRepository;
+    private final MessageChannel outputChannel;
+
+    @Autowired
+    public UserService(UserRepository userRepository, MessageChannel outputChannel) {
+        this.userRepository = userRepository;
+        this.outputChannel = outputChannel;
+    }
+
+    public User registerUser(RegisterUserCommand command) {
+        User user = new User();
+        user.setName(command.getName());
+        user.setPhone(command.getPhone());
+        user.setAddress(command.getAddress());
+        User savedUser = userRepository.save(user);
+
+        UserRegisteredEvent event = new UserRegisteredEvent(savedUser.getUserId(), savedUser.getName(), savedUser.getPhone(), savedUser.getAddress());
+        outputChannel.send(MessageBuilder.withPayload(event).build());
+
+        return savedUser;
+    }
+
+    public User updateUser(UpdateUserCommand command) {
+        User user = userRepository.findById(Long.parseLong(command.getUserId())).orElseThrow();
+        user.setName(command.getName());
+        user.setPhone(command.getPhone());
+        user.setAddress(command.getAddress());
+        User updatedUser = userRepository.save(user);
+
+        UserUpdatedEvent event = new UserUpdatedEvent(updatedUser.getUserId(), updatedUser.getName(), updatedUser.getPhone(), updatedUser.getAddress());
+        outputChannel.send(MessageBuilder.withPayload(event).build());
+
+        return updatedUser;
+    }
+}
+```
+
+We will need to configure the Kafka message channel.
+
+src/main/java/com/example/usermanagement/config/KafkaConfig.java
+```java
+package com.example.usermanagement.config;
+
+import org.springframework.cloud.stream.annotation.EnableBinding;
+import org.springframework.cloud.stream.messaging.Source;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+@EnableBinding(Source.class)
+public class KafkaConfig {
+}
+```
+
+Finally, we will create a REST controller to expose the command handling over HTTP.
+
+src/main/java/com/example/usermanagement/controller/UserController.java
+```java
+package com.example.usermanagement.controller;
+
+import com.example.usermanagement.domain.User;
+import com.example.usermanagement.service.UserService;
+import com.example.usermanagement.service.command.RegisterUserCommand;
+import com.example.usermanagement.service.command.UpdateUserCommand;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/users")
+public class UserController {
+    private final UserService userService;
+
+    @Autowired
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
+
+    @PostMapping
+    public ResponseEntity<User> registerUser(@RequestBody RegisterUserCommand command) {
+        User user = userService.registerUser(command);
+        return ResponseEntity.ok(user);
+    }
+
+    @PutMapping("/{userId}")
+    public ResponseEntity<User> updateUser(@PathVariable String userId, @RequestBody UpdateUserCommand command) {
+        command.setUserId(userId);
+        User user = userService.updateUser(command);
+        return ResponseEntity.ok(user);
+    }
+}
+```
+
+Lastly, we will create a simple JUnit test for the `UserService`.
+
+src/test/java/com/example/usermanagement/service/UserServiceTest.java
+```java
+package com.example.usermanagement.service;
+
+import com.example.usermanagement.domain.Address;
+import com.example.usermanagement.domain.User;
+import com.example.usermanagement.repository.UserRepository;
+import com.example.usermanagement.service.command.RegisterUserCommand;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.support.GenericMessage;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.*;
+
+@SpringBootTest
+public class UserServiceTest {
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Test
+    public void testRegisterUser() {
+        MessageChannel mockOutputChannel = mock(MessageChannel.class);
+        UserService userServiceWithMock = new UserService(userRepository, mockOutputChannel);
+
+        Address address = new Address("123 Main St", "Springfield", "IL", "62701", "USA");
+        RegisterUserCommand command = new RegisterUserCommand("John Doe", "555-1234", address);
+
+        User registeredUser = userServiceWithMock.registerUser(command);
+
+        ArgumentCaptor<GenericMessage> messageCaptor = ArgumentCaptor.forClass(GenericMessage.class);
+        verify(mockOutputChannel).send(messageCaptor.capture());
+
+        assertEquals("John Doe", registeredUser.getName());
+        assertEquals("555-1234", registeredUser.getPhone());
+        assertEquals(address, registeredUser.getAddress());
+    }
+}
+```
+
+This concludes a fully working implementation.

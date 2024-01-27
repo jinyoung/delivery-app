@@ -1,0 +1,7 @@
+```sh
+mvn clean install --no-transfer-progress
+```
+
+```sh
+./run.sh
+```
