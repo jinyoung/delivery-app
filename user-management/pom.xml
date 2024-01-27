@@ -1,9 +1,9 @@
+pom.xml 파일 예시
+
 <project>
-	<dependencies>
-		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId isKey="true">spring-cloud-stream-test-support</artifactId>
-			<scope>test</scope>
-		</dependency>
-    </dependencies>
+ <modelVersion>4.0.0</modelVersion>
+ <groupId>com.example</groupId>
+ <artifactId>delivery-app</artifactId>
+ <version>1.0.0</version>
+...
 </project>
