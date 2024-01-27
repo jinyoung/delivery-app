@@ -1,0 +1,29 @@
+Please implement for this Event Storming Model:
+
+{"_type":"BoundedContext","aggregates":[{"aggregateRoot":{"_type":"AggregateRoot","fieldDescriptors":[{"className":"String","name":"restaurantId","displayName":"음식점 ID","_type":"FieldDescriptor"},{"className":"String","name":"name","displayName":"이름","_type":"FieldDescriptor"},{"className":"Address","name":"address","displayName":"주소","_type":"FieldDescriptor"},{"className":"String","name":"phone","displayName":"전화번호","_type":"FieldDescriptor"},{"className":"String","name":"menu","displayName":"메뉴","_type":"FieldDescriptor"}]},"commands":[{"_type":"Command","fieldDescriptors":[{"className":"String","name":"restaurantId","_type":"FieldDescriptor"},{"className":"String","name":"name","_type":"FieldDescriptor"},{"className":"Address","name":"address","_type":"FieldDescriptor"},{"className":"String","name":"phone","_type":"FieldDescriptor"},{"className":"String","name":"menu","_type":"FieldDescriptor"}],"name":"RegisterRestaurant","displayName":"음식점 등록"},{"_type":"Command","fieldDescriptors":[{"className":"String","name":"restaurantId","_type":"FieldDescriptor"},{"className":"String","name":"name","_type":"FieldDescriptor"},{"className":"Address","name":"address","_type":"FieldDescriptor"},{"className":"String","name":"phone","_type":"FieldDescriptor"},{"className":"String","name":"menu","_type":"FieldDescriptor"}],"name":"UpdateRestaurant","displayName":"음식점 정보 업데이트"},{"_type":"Command","fieldDescriptors":[{"className":"String","name":"orderId","_type":"FieldDescriptor"},{"className":"String","name":"restaurantId","_type":"FieldDescriptor"},{"className":"String","name":"menu","_type":"FieldDescriptor"},{"className":"Integer","name":"quantity","_type":"FieldDescriptor"}],"name":"ManageOrder","displayName":"주문 관리"}],"events":[{"fieldDescriptors":[{"className":"String","name":"restaurantId","_type":"FieldDescriptor"},{"className":"String","name":"name","_type":"FieldDescriptor"},{"className":"Address","name":"address","_type":"FieldDescriptor"},{"className":"String","name":"phone","_type":"FieldDescriptor"},{"className":"String","name":"menu","_type":"FieldDescriptor"}],"name":"RestaurantRegistered","displayName":"음식점 등록됨","_type":"Event"},{"fieldDescriptors":[{"className":"String","name":"restaurantId","_type":"FieldDescriptor"},{"className":"String","name":"name","_type":"FieldDescriptor"},{"className":"Address","name":"address","_type":"FieldDescriptor"},{"className":"String","name":"phone","_type":"FieldDescriptor"},{"className":"String","name":"menu","_type":"FieldDescriptor"}],"name":"RestaurantUpdated","displayName":"음식점 정보 업데이트됨","_type":"Event"},{"fieldDescriptors":[{"className":"String","name":"orderId","_type":"FieldDescriptor"},{"className":"String","name":"restaurantId","_type":"FieldDescriptor"},{"className":"String","name":"menu","_type":"FieldDescriptor"},{"className":"Integer","name":"quantity","_type":"FieldDescriptor"}],"name":"OrderProcessed","displayName":"주문 처리됨","_type":"Event"}],"name":"Restaurant","displayName":"음식점 점주","_type":"Aggregate"}],"name":"restaurant-management","displayName":"음식점 관리","policies":[]}
+
+
+I want to utilize following techniques:
+
+- clean architecture
+- spring-boot3
+- spring-data-rest
+- JPA (must use package jakarta.persistence.* instead of javax.persistence.*)
+- H2 DB
+- Lombok
+- Kafka with spring-cloud-streams library 
+- JUnit Test
+
+
+SELF-CRITICISM: 
+ - when you create pom.xml, USE correct parent project to spring boot 3
+ - when you create pom.xml, you MUST specify the version: 3.1.3 ONLY for the spring-cloud-streams
+ - Please generate start from pom.xml
+
+
+when you create execution shell (run.sh), please add '--no-transfer-progress' option not to output transfer progress if there's mvn command:
+
+```
+mvn [command] --no-transfer-progress
+```
+
